@@ -1,9 +1,9 @@
 import { DispatchContext } from "./DispatchContext";
 import { SignalBinding } from "./SignalBinding";
-import { HandlerResponse, ListenerWrapper, PrivateScope, PropagationType, SignalConfig } from "./types";
+import { ListenerWrapper, PrivateScope, PropagationType, SignalConfig } from "./types";
 
-export class Signal<T> {
-  private _bindings: Array<SignalBinding<T>>
+export class Signal<T, RT> {
+  private _bindings: Array<SignalBinding<T, RT>>
   private _resolution: PropagationType
   private _haltOnResolve: boolean
   private _memoize: boolean
@@ -12,17 +12,17 @@ export class Signal<T> {
   private _listenerSuccessTest = (val: any) => val !== undefined
 
   private resolvers = {
-    all: (replies: HandlerResponse, wasStopped: boolean = false) =>
+    all: (replies: Array<RT>, wasStopped: boolean = false) =>
       (wasStopped || replies.length === this._bindings.length) && replies.every(this._listenerSuccessTest),
-    any: (replies: HandlerResponse, wasStopped: boolean = false) =>
+    any: (replies: Array<RT>, wasStopped: boolean = false) =>
       replies.findIndex(this._listenerSuccessTest) > -1,
-    'any-fail': (replies: HandlerResponse, wasStopped: boolean = false) =>
+    'any-fail': (replies: Array<RT>, wasStopped: boolean = false) =>
       replies.findIndex((r) => !this._listenerSuccessTest(r)) > -1,
-    none: (replies: HandlerResponse, wasStopped: boolean = false) =>
+    none: (replies: Array<RT>, wasStopped: boolean = false) =>
       (wasStopped || replies.length === this._bindings.length) && replies.every(val => !this._listenerSuccessTest(val)),
   }
 
-  private get sortedBindings(): Array<SignalBinding<T>> {
+  private get sortedBindings(): Array<SignalBinding<T, RT>> {
     return this._bindings
       .slice(0)
       .sort((a, b) => a.priority - b.priority)
@@ -72,24 +72,24 @@ export class Signal<T> {
   }
 
   add(
-    listener: (data: T) => HandlerResponse,
+    listener: (data: T) => Promise<RT> | RT,
     bindingTarget?: any,
     priority?: number,
     isOnce?: boolean
-  ): SignalBinding<T>
+  ): SignalBinding<T, RT>
   add(
-    listener: () => HandlerResponse,
+    listener: () => Promise<RT> | RT,
     bindingTarget?: any,
     priority?: number,
     isOnce?: boolean
-  ): SignalBinding<T>
+  ): SignalBinding<T, RT>
 
   add(
-    listener: (data: T, context: DispatchContext) => HandlerResponse,
+    listener: (data: T, context: DispatchContext) => Promise<RT> | RT,
     bindingTarget?: any,
     priority?: number,
     isOnce?: boolean
-  ): SignalBinding<T>
+  ): SignalBinding<T, RT>
 
   add(listener: Function, bindingTarget?: any, priority?: number, isOnce?: boolean) {
     let binding = this._bindings.find((b) => b[PrivateScope].isSame(listener, bindingTarget))
@@ -125,7 +125,7 @@ export class Signal<T> {
     bindingTarget: any,
     priority: number = 0,
     isOnce: boolean = false
-  ): SignalBinding<T> {
+  ): SignalBinding<T, RT> {
     const binding = new SignalBinding(this, listener, isOnce, bindingTarget, priority)
     this._bindings.push(binding)
     if (this._memoize && this._latestCall) {
@@ -135,7 +135,7 @@ export class Signal<T> {
   }
 
   [PrivateScope] = {
-    removeBinding: function (binding: SignalBinding<T>) {
+    removeBinding: function (binding: SignalBinding<T, RT>) {
       const index = this._bindings.indexOf(binding)
       if (index > -1) {
         this._bindings.splice(index, 1)
@@ -144,21 +144,21 @@ export class Signal<T> {
   }
 
   addOnce(
-    listener: (data: T) => HandlerResponse,
+    listener: (data: T) => Promise<RT> | RT,
     bindingTarget?: any,
     priority?: number
-  ): SignalBinding<T>
+  ): SignalBinding<T, RT>
   addOnce(
-    listener: () => HandlerResponse,
+    listener: () => Promise<RT> | RT,
     bindingTarget?: any,
     priority?: number
-  ): SignalBinding<T>
+  ): SignalBinding<T, RT>
 
   addOnce(
-    listener: (data: T, context: DispatchContext) => HandlerResponse,
+    listener: (data: T, context: DispatchContext) => Promise<RT> | RT,
     bindingTarget?: any,
     priority?: number
-  ): SignalBinding<T>
+  ): SignalBinding<T, RT>
 
   addOnce(listener, bindingTarget: any = null, priority: number = 0) {
     return this.add(listener, bindingTarget, priority, true)

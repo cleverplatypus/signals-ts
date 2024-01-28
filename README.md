@@ -20,7 +20,7 @@ What I though was missing was:
 ## Installation
 
 ```sh
-$ nvm i --save signals.ts
+$ npm i --save signals.ts
 ```
 or
 
@@ -35,9 +35,14 @@ $ echo 'whatever package manager you use... the package is on npm.com 🙂'
 
 ## Basic usage
 
+
 ```ts
 //signals.ts --------------------------
+
+import {Signal} from 'signals.ts';
 export const MY_SIGNAL = new Signal();
+export const MY_OTHER_SIGNAL = new Signal();
+//...
 ```
 
 ```ts

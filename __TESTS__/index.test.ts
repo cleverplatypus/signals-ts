@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { DispatchContext, Signal } from '../src/index';
+import { Signal } from '../src/index';
 
 it('signals should reach the listener', async () => {
     const signal = new Signal();
@@ -109,19 +109,15 @@ it('attempts to add the same listener more than once should be ignored', async (
 })
 
 it('should be able to configure what a successful listener means', async () => {
-    const signal = new Signal({ 
+    const signal = new Signal<undefined, boolean>({ 
         listenerSuccessTest : (val) =>  val === true, 
         propagate: 'any', 
         haltOnResolve: true });
     const spy = vi.fn();
-    const listener1 = () => { spy(); return false};
-    const listener2 = () => { spy(); return false};
-    const listener3 = () => { spy(); return true};
-    const listener4 = () => { spy(); return true};
-    signal.add(listener1, null, 3);
-    signal.add(listener2, null, 2);
-    signal.add(listener3, null, 1);
-    signal.add(listener4, null, 0);
+    signal.add(() => { spy(); return false}, null, 3);
+    signal.add(() => { spy(); return false}, null, 2);
+    signal.add(() => { spy(); return true}, null, 1);
+    signal.add(() => { spy(); return true}, null, 0);
 
     await signal.dispatch();
     expect(spy).toBeCalledTimes(3);

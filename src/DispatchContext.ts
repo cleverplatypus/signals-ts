@@ -3,10 +3,10 @@ import { PrivateScope } from "./types"
 
 export class DispatchContext {
     private _halted = false
-    readonly signal: Signal<any>;
+    readonly signal: Signal<any, any>;
     private _wasYelded = false
   
-    constructor(signal: Signal<any>) {
+    constructor(signal: Signal<any, any>) {
       this.signal = signal
     }
   

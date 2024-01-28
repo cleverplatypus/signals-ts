@@ -1,7 +1,5 @@
 import { DispatchContext } from "./DispatchContext"
 
-export type HandlerResponse = Promise<any> | any
-
 export type ListenerWrapper = {
   target: Function
   wrapper: Function

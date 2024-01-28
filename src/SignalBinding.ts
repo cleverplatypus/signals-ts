@@ -2,8 +2,8 @@ import { DispatchContext } from "./DispatchContext";
 import { Signal } from "./Signal";
 import { ListenerWrapper, PrivateScope } from "./types";
 
-export class SignalBinding<T> {
-    private _signal: Signal<T>
+export class SignalBinding<T, RT> {
+    private _signal: Signal<T, RT>
     private _listener: ListenerWrapper
   
     readonly isOnce: boolean
@@ -39,7 +39,7 @@ export class SignalBinding<T> {
     }
   
     constructor(
-      signal: Signal<T>,
+      signal: Signal<T, RT>,
       listener: ListenerWrapper,
       isOnce: boolean,
       bindingTarget: any,
