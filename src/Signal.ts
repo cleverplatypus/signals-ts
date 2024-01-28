@@ -1,6 +1,6 @@
 import { DispatchContext } from "./DispatchContext";
 import { SignalBinding } from "./SignalBinding";
-import { HandlerResponses, ListenerResponse, ListenerWrapper, PrivateScope, ResolutionType, SignalConfig } from "./types";
+import { HandlerResponse, ListenerWrapper, PrivateScope, ResolutionType, SignalConfig } from "./types";
 
 export class Signal<T> {
   private _bindings: Array<SignalBinding<T>>
@@ -9,16 +9,17 @@ export class Signal<T> {
   private _memoize: boolean
   private _latestCall?: { payload?: T }
   private _suspended: boolean = false
+  private _listenerSuccessTest = (val: any) => val !== undefined
 
   private resolvers = {
-    all: (replies: HandlerResponses, wasStopped: boolean = false) =>
-      (wasStopped || replies.length === this._bindings.length) && replies.every((r) => r !== false),
-    any: (replies: HandlerResponses, wasStopped: boolean = false) =>
-      replies.findIndex((r) => !r || r === true) > -1,
-    'any-fail': (replies: HandlerResponses, wasStopped: boolean = false) =>
-      replies.findIndex((r) => r === false) > -1,
-    none: (replies: HandlerResponses, wasStopped: boolean = false) =>
-      (wasStopped || replies.length === this._bindings.length) && replies.every((r) => r === false)
+    all: (replies: HandlerResponse, wasStopped: boolean = false) =>
+      (wasStopped || replies.length === this._bindings.length) && replies.every(this._listenerSuccessTest),
+    any: (replies: HandlerResponse, wasStopped: boolean = false) =>
+      replies.findIndex(this._listenerSuccessTest) > -1,
+    'any-fail': (replies: HandlerResponse, wasStopped: boolean = false) =>
+      replies.findIndex((r) => !this._listenerSuccessTest(r)) > -1,
+    none: (replies: HandlerResponse, wasStopped: boolean = false) =>
+      (wasStopped || replies.length === this._bindings.length) && replies.every(val => !this._listenerSuccessTest(val)),
   }
 
   private get sortedBindings(): Array<SignalBinding<T>> {
@@ -28,12 +29,17 @@ export class Signal<T> {
       .reverse()
   }
 
-  constructor({ resolution = 'all', haltOnResolve = false, memoize = false }: SignalConfig = {}) {
+  constructor({ 
+      resolution = 'all', 
+      haltOnResolve = false, 
+      memoize = false,
+      listenerSuccessTest = val => val !== undefined }: SignalConfig = {}) {
     this._bindings = []
     this._resolution = resolution
     this._haltOnResolve = haltOnResolve
     this._memoize = memoize
     this._latestCall = undefined
+    this._listenerSuccessTest = listenerSuccessTest;
   }
 
   /**
@@ -66,20 +72,20 @@ export class Signal<T> {
   }
 
   add(
-    listener: (data: T) => ListenerResponse,
+    listener: (data: T) => HandlerResponse,
     bindingTarget?: any,
     priority?: number,
     isOnce?: boolean
   ): SignalBinding<T>
   add(
-    listener: () => ListenerResponse,
+    listener: () => HandlerResponse,
     bindingTarget?: any,
     priority?: number,
     isOnce?: boolean
   ): SignalBinding<T>
 
   add(
-    listener: (data: T, context: DispatchContext<T>) => ListenerResponse,
+    listener: (data: T, context: DispatchContext) => HandlerResponse,
     bindingTarget?: any,
     priority?: number,
     isOnce?: boolean
@@ -107,7 +113,7 @@ export class Signal<T> {
     } else {
       caller = {
         target: listener,
-        wrapper: (data: T, context: DispatchContext<T>) =>
+        wrapper: (data: T, context: DispatchContext) =>
           listener.call(bindingTarget, data, context)
       }
     }
@@ -138,18 +144,18 @@ export class Signal<T> {
   }
 
   addOnce(
-    listener: (data: T) => ListenerResponse,
+    listener: (data: T) => HandlerResponse,
     bindingTarget?: any,
     priority?: number
   ): SignalBinding<T>
   addOnce(
-    listener: () => ListenerResponse,
+    listener: () => HandlerResponse,
     bindingTarget?: any,
     priority?: number
   ): SignalBinding<T>
 
   addOnce(
-    listener: (data: T, context: DispatchContext<T>) => ListenerResponse,
+    listener: (data: T, context: DispatchContext) => HandlerResponse,
     bindingTarget?: any,
     priority?: number
   ): SignalBinding<T>
@@ -162,7 +168,6 @@ export class Signal<T> {
     if (this._suspended) {
       return Promise.reject('Signal suspended')
     }
-    let outcome: any
     if (this._memoize) {
       this._latestCall = { payload: arg }
     }
@@ -177,13 +182,13 @@ export class Signal<T> {
         replies.push(await b.execute(arg, context))
         if (b.isOnce) this._bindings.splice(this._bindings.indexOf(b), 1)
       } catch (e) {
-        replies.push(false)
+        replies.push(e)
       }
 
       const result = this.resolvers[this._resolution](replies)
 
       if (result) {
-        outcome = Promise.resolve()
+        
         context[PrivateScope].wasYelded = true
         if (this._haltOnResolve) {
           context.halt()
@@ -203,6 +208,6 @@ export class Signal<T> {
         }
       })
     }
-    return outcome
+    return Promise.resolve(replies);
   }
 }

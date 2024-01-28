@@ -1,12 +1,12 @@
 import { Signal } from "./Signal"
 import { PrivateScope } from "./types"
 
-export class DispatchContext<T> {
+export class DispatchContext {
     private _halted = false
-    readonly signal: Signal<T>
+    readonly signal: Signal<any>;
     private _wasYelded = false
   
-    constructor(signal: Signal<T>) {
+    constructor(signal: Signal<any>) {
       this.signal = signal
     }
   

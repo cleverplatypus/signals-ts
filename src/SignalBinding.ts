@@ -56,7 +56,7 @@ export class SignalBinding<T> {
       return this._priority
     }
   
-    execute(payload: T | undefined, context: DispatchContext<T>): any {
+    async execute(payload: T | undefined, context: DispatchContext): Promise<any> {
       return this._listener.wrapper.apply(this._bindingTarget, [payload, context])
     }
   }

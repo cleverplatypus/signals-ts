@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { DispatchContext, Signal } from '../src/index';
 
-it('should be possible to use a signal', async () => {
+it('signals should reach the listener', async () => {
     const signal = new Signal();
     const spy = vi.fn();
     signal.add(spy);
@@ -12,7 +12,7 @@ it('should be possible to use a signal', async () => {
 
 it('should be possible to interrupt after the first positive result from a listener when resolution is "any"', async () => {
     const signal = new Signal({resolution: 'any', haltOnResolve: true});
-    const listener1 = () => Promise.resolve();
+    const listener1 = () => Promise.resolve(true);
     const spy = vi.fn();
     const listener2 = () => {spy()};
     signal.add(listener1, null, 1);
@@ -23,7 +23,7 @@ it('should be possible to interrupt after the first positive result from a liste
 
 it('should be possible to interrupt after the first negative result from a listener when resolution is "any-fail"', async () => {
     const signal = new Signal({resolution: 'any-fail', haltOnResolve: true});
-    const listener1 = () => Promise.reject();
+    const listener1 = () => undefined;
     const spy = vi.fn();
     const listener2 = () => {spy()};
     signal.add(listener1, null, 1);
@@ -35,8 +35,8 @@ it('should be possible to interrupt after the first negative result from a liste
 it('should be possible to continue signal propagation regardless of the resolution', async () => {
     const signal = new Signal({resolution: 'any', haltOnResolve: false});
     const spy = vi.fn();
-    const listener1 = () => { spy(); return Promise.resolve()};
-    const listener2 = () => {spy()};
+    const listener1 = () => { spy()};
+    const listener2 = () => {spy(); return true};
     const listener3 = () => {spy()};
     signal.add(listener1);
     signal.add(listener2);
@@ -56,38 +56,35 @@ it('listeners added with addOnce should be removed after the first dispatch', as
 })
 
 it('should be possible to collect results from all listeners', async () => {
-    type SignalParam = { accumulator : Array<number> }
-    const signal = new Signal<SignalParam>({resolution: 'any', haltOnResolve: false});
-    signal.add(({accumulator}) => { accumulator.push(1)}, null, 3);
-    signal.add(({accumulator}) => { accumulator.push(2)}, null, 2);
-    signal.add(({accumulator}) => { accumulator.push(3)}, null, 1);
-    const accumulator = [];
-    await signal.dispatch({accumulator});
+    
+    const signal = new Signal({resolution: 'any', haltOnResolve: false});
+    signal.add(() => { return 1});
+    signal.add(() => { return 2});
+    signal.add(() => { return 3});
+    const accumulator = 
+        await signal.dispatch();
     const sum = accumulator.reduce((a, b) => a + b, 0);
     expect(sum).toBe(6);
 
 })
 
 it('priority in listeners should be respected', async () => {
-    type SignalParam = { accumulator : Array<number> }
-    const signal = new Signal<SignalParam>({resolution: 'any', haltOnResolve: false});
-    signal.add(({accumulator}) => { accumulator.push(1)}, null, 3);
-    signal.add(({accumulator}) => { accumulator.push(2)}, null, 2);
-    signal.add(({accumulator}) => { accumulator.push(3)}, null, 1);
-    const accumulator = [];
-    await signal.dispatch({accumulator});
+    const signal = new Signal({resolution: 'any', haltOnResolve: false});
+    signal.add(() => { return 1}, null, 3);
+    signal.add(() => { return 2}, null, 2);
+    signal.add(() => { return 3}, null, 1);
+    const accumulator = await signal.dispatch();
     expect(accumulator).toEqual([1, 2, 3]);
 })
 
 it('context.halt() should stop signal propagation', async () => {
-    type SignalParam = { accumulator : Array<number> }
-    const signal = new Signal<SignalParam>({resolution: 'any', haltOnResolve: true});
-    signal.add(({accumulator}) => { accumulator.push(1)}, null, 3);
-    signal.add((_ : any, context : DispatchContext<SignalParam>) => { context.halt();}, null, 2);
-    signal.add(({accumulator}) => { accumulator.push(3)}, null, 1);
-    const accumulator = [];
-    await signal.dispatch({accumulator});
-    expect(accumulator).toEqual([1]);
+    const signal = new Signal({resolution: 'any', haltOnResolve: true});
+    signal.add(() => { return 1}, null, 3);
+    signal.add((_ : any, context) => { context.halt();}, null, 2);
+    signal.add(() => { return 3}, null, 1);
+    const [accumulator] =
+        await signal.dispatch();
+    expect(accumulator).toEqual(1);
 })
 
 it('memoized signals should dispatch latest payload upon new add', async () => {
@@ -109,5 +106,25 @@ it('attempts to add the same listener more than once should be ignored', async (
     signal.add(spy);
     await signal.dispatch();
     expect(spy).toBeCalledTimes(1);
+})
+
+it('should be able to configure what a successful listener means', async () => {
+    const signal = new Signal({ 
+        listenerSuccessTest : (val) =>  val === true, 
+        resolution: 'any', 
+        haltOnResolve: true });
+    const spy = vi.fn();
+    const listener1 = () => { spy(); return false};
+    const listener2 = () => { spy(); return false};
+    const listener3 = () => { spy(); return true};
+    const listener4 = () => { spy(); return true};
+    signal.add(listener1, null, 3);
+    signal.add(listener2, null, 2);
+    signal.add(listener3, null, 1);
+    signal.add(listener4, null, 0);
+
+    await signal.dispatch();
+    expect(spy).toBeCalledTimes(3);
+
 })
 
