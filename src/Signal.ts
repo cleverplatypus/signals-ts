@@ -1,10 +1,10 @@
 import { DispatchContext } from "./DispatchContext";
 import { SignalBinding } from "./SignalBinding";
-import { HandlerResponse, ListenerWrapper, PrivateScope, ResolutionType, SignalConfig } from "./types";
+import { HandlerResponse, ListenerWrapper, PrivateScope, PropagationType, SignalConfig } from "./types";
 
 export class Signal<T> {
   private _bindings: Array<SignalBinding<T>>
-  private _resolution: ResolutionType
+  private _resolution: PropagationType
   private _haltOnResolve: boolean
   private _memoize: boolean
   private _latestCall?: { payload?: T }
@@ -30,7 +30,7 @@ export class Signal<T> {
   }
 
   constructor({ 
-      resolution = 'all', 
+      propagate: resolution = 'all', 
       haltOnResolve = false, 
       memoize = false,
       listenerSuccessTest = val => val !== undefined }: SignalConfig = {}) {

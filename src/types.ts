@@ -9,10 +9,10 @@ export type ListenerWrapper = {
 
 export type ListenerArgs<T> = [T] | [] | [T, DispatchContext]
 
-export type ResolutionType = 'all' | 'any' | 'none' | 'any-fail'
+export type PropagationType = 'all' | 'any' | 'none' | 'any-fail'
 
 export type SignalConfig = {
-  resolution?: ResolutionType
+  propagate?: PropagationType
   haltOnResolve?: boolean
   memoize?: boolean
   listenerSuccessTest? : (value: any) => boolean

@@ -11,7 +11,7 @@ it('signals should reach the listener', async () => {
 })
 
 it('should be possible to interrupt after the first positive result from a listener when resolution is "any"', async () => {
-    const signal = new Signal({resolution: 'any', haltOnResolve: true});
+    const signal = new Signal({propagate: 'any', haltOnResolve: true});
     const listener1 = () => Promise.resolve(true);
     const spy = vi.fn();
     const listener2 = () => {spy()};
@@ -22,7 +22,7 @@ it('should be possible to interrupt after the first positive result from a liste
 })
 
 it('should be possible to interrupt after the first negative result from a listener when resolution is "any-fail"', async () => {
-    const signal = new Signal({resolution: 'any-fail', haltOnResolve: true});
+    const signal = new Signal({propagate: 'any-fail', haltOnResolve: true});
     const listener1 = () => undefined;
     const spy = vi.fn();
     const listener2 = () => {spy()};
@@ -33,7 +33,7 @@ it('should be possible to interrupt after the first negative result from a liste
 })
 
 it('should be possible to continue signal propagation regardless of the resolution', async () => {
-    const signal = new Signal({resolution: 'any', haltOnResolve: false});
+    const signal = new Signal({propagate: 'any', haltOnResolve: false});
     const spy = vi.fn();
     const listener1 = () => { spy()};
     const listener2 = () => {spy(); return true};
@@ -57,7 +57,7 @@ it('listeners added with addOnce should be removed after the first dispatch', as
 
 it('should be possible to collect results from all listeners', async () => {
     
-    const signal = new Signal({resolution: 'any', haltOnResolve: false});
+    const signal = new Signal({propagate: 'any', haltOnResolve: false});
     signal.add(() => { return 1});
     signal.add(() => { return 2});
     signal.add(() => { return 3});
@@ -69,7 +69,7 @@ it('should be possible to collect results from all listeners', async () => {
 })
 
 it('priority in listeners should be respected', async () => {
-    const signal = new Signal({resolution: 'any', haltOnResolve: false});
+    const signal = new Signal({propagate: 'any', haltOnResolve: false});
     signal.add(() => { return 1}, null, 3);
     signal.add(() => { return 2}, null, 2);
     signal.add(() => { return 3}, null, 1);
@@ -78,7 +78,7 @@ it('priority in listeners should be respected', async () => {
 })
 
 it('context.halt() should stop signal propagation', async () => {
-    const signal = new Signal({resolution: 'any', haltOnResolve: true});
+    const signal = new Signal({propagate: 'any', haltOnResolve: true});
     signal.add(() => { return 1}, null, 3);
     signal.add((_ : any, context) => { context.halt();}, null, 2);
     signal.add(() => { return 3}, null, 1);
@@ -111,7 +111,7 @@ it('attempts to add the same listener more than once should be ignored', async (
 it('should be able to configure what a successful listener means', async () => {
     const signal = new Signal({ 
         listenerSuccessTest : (val) =>  val === true, 
-        resolution: 'any', 
+        propagate: 'any', 
         haltOnResolve: true });
     const spy = vi.fn();
     const listener1 = () => { spy(); return false};
