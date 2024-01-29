@@ -9,12 +9,20 @@ export class SignalBinding<T, RT> {
     readonly isOnce: boolean
     private _priority: number
     private _bindingTarget: any;
-  
+    private _suspended = false;
+
     [PrivateScope] = {
+       execute: async function(payload: T | undefined, context: DispatchContext): Promise<any> {
+        return this._listener.wrapper.apply(this._bindingTarget, [payload, context])
+      }.bind(this),
       destroy: function () {
+        debugger
         this._signal = null
         this._listener = null
         this._bindingTarget = null
+      }.bind(this),
+      isSuspended: function () {
+        return this._suspended
       }.bind(this),
       isSame: function (listener: Function, bindingTarget: any) {
         return this._listener.target === listener && this._bindingTarget === bindingTarget
@@ -27,8 +35,26 @@ export class SignalBinding<T, RT> {
      * @return {Function|null} Handler function bound to the signal or `null` if binding was previously detached.
      */
     public detach() {
-      if (this.isBound())
+      if (this.isBound()) {
         this._signal![PrivateScope].removeBinding(this._listener, this._bindingTarget)
+        this[PrivateScope].destroy();
+      }
+    }
+
+    /**
+     * Suspend the signal. While suspended, dispatches will not be called.
+     */
+    public suspend() {
+      if(!this.isBound()) throw new Error('Binding is no longer bound to a signal')
+      this._suspended = true
+    }
+    
+    /**
+     * Resumes the operation of the function.
+     */
+    public resume() {
+      if(!this.isBound()) throw new Error('Binding is no longer bound to a signal')
+      this._suspended = false
     }
   
     /**
@@ -56,7 +82,5 @@ export class SignalBinding<T, RT> {
       return this._priority
     }
   
-    async execute(payload: T | undefined, context: DispatchContext): Promise<any> {
-      return this._listener.wrapper.apply(this._bindingTarget, [payload, context])
-    }
+    
   }

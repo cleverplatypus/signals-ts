@@ -121,6 +121,85 @@ it('should be able to configure what a successful listener means', async () => {
 
     await signal.dispatch();
     expect(spy).toBeCalledTimes(3);
-
 })
 
+it('detached listeners should not be called', async () => {
+    const signal = new Signal();
+    const spy = vi.fn();
+    const binding = signal.add(spy);
+    await signal.dispatch();
+    expect(spy).toBeCalledTimes(1);
+    binding.detach();
+    await signal.dispatch();
+    expect(spy).toBeCalledTimes(1);
+})
+
+it('suspended signals should not dispatch', async () => {
+    const signal = new Signal();
+    const spy = vi.fn();
+    signal.add(spy);
+    await signal.dispatch();
+    signal.suspend();
+    await expect(async () => {        
+        await signal.dispatch();
+    }).rejects.toThrowError('Signal suspended');
+    expect(spy).toBeCalledTimes(1);
+})
+
+it('suspended signals can be resumed', async () => {
+    const signal = new Signal();
+    const spy = vi.fn();
+    signal.add(spy);
+    await signal.dispatch();
+    signal.suspend();
+    await expect(async () => {        
+        await signal.dispatch();
+    }).rejects.toThrowError('Signal suspended');
+    signal.resume();
+    await signal.dispatch();
+    expect(spy).toBeCalledTimes(2);
+})
+
+it('should be possible to remove all listeners', async () => {
+    const signal = new Signal();
+    const spy = vi.fn();
+    signal.add(spy);
+    await signal.dispatch();
+    signal.removeAll();
+    await signal.dispatch();
+    expect(spy).toBeCalledTimes(1);
+})
+
+it('a detached listener should not be called', async () => {
+    const signal = new Signal();
+    const spy = vi.fn();
+    const binding = signal.add(spy);
+    await signal.dispatch();
+    expect(spy).toBeCalledTimes(1);
+    binding.detach();
+    await signal.dispatch();
+    expect(spy).toBeCalledTimes(1);
+})
+
+it('should be able to check if a signal has a specific listener', async () => {
+    const signal = new Signal();
+    const spy = vi.fn();
+    signal.add(spy);
+    await signal.dispatch();
+    expect(signal.has(spy)).toBe(true);
+    signal.removeAll();
+    expect(signal.has(spy)).toBe(false);
+})
+
+it('should be possible to suspend and resume individual listeners', async () => {
+    const signal = new Signal();
+    const spy = vi.fn();
+    const binding = signal.add(() => spy());
+    signal.add(() => spy());
+    await signal.dispatch();
+    binding.suspend();
+    await signal.dispatch();
+    binding.resume();
+    await signal.dispatch();
+    expect(spy).toBeCalledTimes(5);
+})

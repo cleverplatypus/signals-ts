@@ -141,6 +141,25 @@ APP_WAS_INITIALIZED.addOnce(() => {
 })
 ```
 
+## Detaching/Suspending a listener
+Adding a listener returns a binding object that can be used to temporarily suspend or permanently detach the listener
+```ts
+
+const fn1Binding = SOME_SIGNAL.add(functionOne);
+SOME_SIGNAL.add(functionTwo);
+SOME_SIGNAL.dispatch() //will reach functionOne and functionTwo
+fn1Binding.suspend()
+SOME_SIGNAL.dispatch() //will reach functionTwo only
+fn1Binding.resume()
+SOME_SIGNAL.dispatch() //will reach functionOne and functionTwo
+
+fn1Binding.detatch()
+SOME_SIGNAL.dispatch() //will reach functionTwo only
+
+fn1Binding.suspend() //will throw Error
+fn1Binding.resume() //will throw Error
+```
+
 
 ## License ##
 
