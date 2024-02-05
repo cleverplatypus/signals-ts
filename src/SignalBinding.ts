@@ -36,7 +36,7 @@ export class SignalBinding<T, RT> {
      */
     public detach() {
       if (this.isBound()) {
-        this._signal![PrivateScope].removeBinding(this._listener, this._bindingTarget)
+        this._signal![PrivateScope].removeBinding(this)
         this[PrivateScope].destroy();
       }
     }
