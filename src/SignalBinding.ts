@@ -16,7 +16,6 @@ export class SignalBinding<T, RT> {
         return this._listener.wrapper.apply(this._bindingTarget, [payload, context])
       }.bind(this),
       destroy: function () {
-        debugger
         this._signal = null
         this._listener = null
         this._bindingTarget = null
