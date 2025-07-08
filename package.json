@@ -1,7 +1,7 @@
 {
   "main": "src/index.ts",
   "name": "signals.ts",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": "Nicola Dal Pont",
   "license": "Apache-2.0",
   "scripts": {
