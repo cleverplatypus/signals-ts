@@ -3,6 +3,9 @@
 ![Tests](https://github.com/cleverplatypus/signals-ts/actions/workflows/test.yml/badge.svg)
 
 
+> **Breaking change from v1.0.4 to v1.0.5**: Signals now resolve to a single value instead of an array when only one listener is attached.
+
+
 Signals implementation for TypeScript.
 
 It's a simple pub-sub message bus architecture that's completely decoupled from any UI or other component.
@@ -10,7 +13,7 @@ It's a simple pub-sub message bus architecture that's completely decoupled from 
 Inspired by [JS-Signals](https://github.com/millermedeiros/js-signals) which was inspired by [AS3-Signals](https://github.com/robertpenner/as3-signals).
 
 ## Why another implementation
-I used many implementations through the years, manly [Miller Medeiros'](https://github.com/millermedeiros/js-signals) one.
+I used many implementations through the years, mainly [Miller Medeiros'](https://github.com/millermedeiros/js-signals) one.
 
 What I though was missing was:
 - TypeScript support 
@@ -81,7 +84,7 @@ const SHOW_DIALOG = new Signal<{title : string, body : string, buttons : Array<'
 
 ```ts
 // the enquirer
-const [response] = //response are always an array
+const response =
   await SHOW_DIALOG.dispatch({title : 'Danger', body : 'This button will destroy the world. Do you want to proceed?', buttons : ['yes', 'no']})
 ```
 
@@ -103,6 +106,7 @@ const APP_WILL_CLOSE = new Signal({propagate : 'any-fail', listenerSuccessTest: 
 
 ```ts
 // The app controller
+//Note: responses is an array if multiple listeners are attached
 const responses = await APP_WILL_CLOSE.dispatch()
 
 const shouldProceed = !response.some(dirty => dirty = false)

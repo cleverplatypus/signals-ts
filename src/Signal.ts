@@ -252,11 +252,12 @@ export class Signal<T, RT> {
       setTimeout(() => {
         for (let b of remainingBindings) {
           try {
-            b.execute(arg, context)
+            
+            b[PrivateScope].execute(arg, context)
           } catch (e) {}
         }
       })
     }
-    return Promise.resolve(replies);
+    return Promise.resolve(this.sortedBindings.length > 1 ? replies : replies[0]);
   }
 }
